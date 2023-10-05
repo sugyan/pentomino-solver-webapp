@@ -21,16 +21,16 @@ function App() {
   };
   useEffect(() => {
     const loop = () => {
-      setIndex((index) => {
+      setIndex(() => {
         if (solutions.length === 0) {
           return -1;
         } else {
-          return (index + 1) % solutions.length;
+          return Math.floor(Math.random() * solutions.length);
         }
       });
       if (running) {
         reqId.current = requestAnimationFrame(() => {
-          timeoutId.current = setTimeout(loop, 20);
+          timeoutId.current = setTimeout(loop, 30);
         });
       }
     };
@@ -63,9 +63,7 @@ function App() {
       {index >= 0 && (
         <div onClick={() => setRunning(!running)}>
           <Board solution={solutions[index]} />
-          <p style={{ fontFamily: "monospace" }}>
-            solution #{index} / {solutions.length}
-          </p>
+          <pre>solution #{index.toString().padStart(4, "0")}</pre>
         </div>
       )}
     </>
