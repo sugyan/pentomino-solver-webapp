@@ -1,35 +1,116 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useMemo, useRef, useState } from "react";
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
-
+  const [message, setMessage] = useState("");
+  const [solutions, setSolutions] = useState([]);
+  const [index, setIndex] = useState(-1);
+  const [running, setRunning] = useState(true);
+  const reqId = useRef<number | null>(null);
+  const timeoutId = useRef<number | null>(null);
+  const worker = useMemo(() => {
+    return new Worker(new URL("./worker", import.meta.url), {
+      type: "module",
+    });
+  }, []);
+  const start = () => {
+    setMessage("solving...");
+    setIndex(-1);
+    setSolutions([]);
+    worker.postMessage(null);
+  };
+  useEffect(() => {
+    const loop = () => {
+      setIndex((index) => {
+        if (solutions.length === 0) {
+          return -1;
+        } else {
+          return (index + 1) % solutions.length;
+        }
+      });
+      if (running) {
+        reqId.current = requestAnimationFrame(() => {
+          timeoutId.current = setTimeout(loop, 20);
+        });
+      }
+    };
+    reqId.current = requestAnimationFrame(loop);
+    return () => {
+      if (reqId.current !== null) {
+        cancelAnimationFrame(reqId.current);
+      }
+      if (timeoutId.current !== null) {
+        clearTimeout(timeoutId.current);
+      }
+    };
+  }, [running, solutions]);
+  worker.onmessage = (event: MessageEvent) => {
+    setMessage(
+      `Found ${
+        event.data.results.length
+      } solutions in ${event.data.elapsed.toFixed(3)}ms`
+    );
+    setSolutions(event.data.results);
+    setRunning(true);
+  };
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
+      <h3>Pentomino Solver</h3>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+        <button onClick={start}>solve</button>
+        <pre>{message}</pre>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      {index >= 0 && (
+        <div onClick={() => setRunning(!running)}>
+          <Board solution={solutions[index]} />
+          <p style={{ fontFamily: "monospace" }}>
+            solution #{index} / {solutions.length}
+          </p>
+        </div>
+      )}
     </>
-  )
+  );
 }
 
-export default App
+function Cell({ type }: { type: string }) {
+  const color = {
+    O: "red",
+    P: "green",
+    Q: "blue",
+    R: "yellow",
+    S: "purple",
+    T: "orange",
+    U: "pink",
+    V: "cyan",
+    W: "lime",
+    X: "brown",
+    Y: "magenta",
+    Z: "teal",
+  }[type];
+  return (
+    <div
+      style={{
+        width: "40px",
+        height: "40px",
+        backgroundColor: color || "white",
+        border: "1px solid black",
+      }}
+    ></div>
+  );
+}
+
+function Board({ solution }: { solution: string[] }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 40px)" }}>
+      {solution.map((row, rowIndex) =>
+        row
+          .split("")
+          .map((cellType, colIndex) => (
+            <Cell key={`${rowIndex}-${colIndex}`} type={cellType} />
+          ))
+      )}
+    </div>
+  );
+}
+
+export default App;
