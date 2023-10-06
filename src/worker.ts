@@ -15,7 +15,7 @@ import { Message, MessageType } from "./message.ts";
     self.postMessage(solverInitializedMessage);
 
     const now = performance.now();
-    const solutions = solver.solve(BigInt(0), true);
+    const solutions = solver.solve(BigInt(0), false);
     const elapsed = performance.now() - now;
     const results = solver.represent_solution(solutions);
     const textMessage: Message = {
