@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
+import Board from "./Board.tsx";
+import { Message, MessageType } from "./message.ts";
 
 function App() {
-  const [message, setMessage] = useState("");
-  const [solutions, setSolutions] = useState([]);
-  const [index, setIndex] = useState(-1);
-  const [running, setRunning] = useState(true);
+  const [message, setMessage] = useState<string>("");
+  const [solutions, setSolutions] = useState<string[][]>([]);
+  const [index, setIndex] = useState<number>(-1);
+  const [running, setRunning] = useState<boolean>(true);
   const reqId = useRef<number | null>(null);
   const timeoutId = useRef<number | null>(null);
   const worker = useMemo(() => {
@@ -45,13 +47,17 @@ function App() {
     };
   }, [running, solutions]);
   worker.onmessage = (event: MessageEvent) => {
-    setMessage(
-      `Found ${
-        event.data.results.length
-      } solutions in ${event.data.elapsed.toFixed(3)}ms`
-    );
-    setSolutions(event.data.results);
-    setRunning(true);
+    const message: Message = event.data;
+    switch (message.type) {
+      case MessageType.TEXT:
+        setMessage(message.text);
+        break;
+      case MessageType.RESULTS:
+        setSolutions(message.results);
+        break;
+      default:
+        break;
+    }
   };
   return (
     <>
@@ -67,47 +73,6 @@ function App() {
         </div>
       )}
     </>
-  );
-}
-
-function Cell({ type }: { type: string }) {
-  const color = {
-    O: "red",
-    P: "green",
-    Q: "blue",
-    R: "yellow",
-    S: "purple",
-    T: "orange",
-    U: "pink",
-    V: "cyan",
-    W: "lime",
-    X: "brown",
-    Y: "magenta",
-    Z: "teal",
-  }[type];
-  return (
-    <div
-      style={{
-        width: "40px",
-        height: "40px",
-        backgroundColor: color || "white",
-        border: "1px solid black",
-      }}
-    ></div>
-  );
-}
-
-function Board({ solution }: { solution: string[] }) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 40px)" }}>
-      {solution.map((row, rowIndex) =>
-        row
-          .split("")
-          .map((cellType, colIndex) => (
-            <Cell key={`${rowIndex}-${colIndex}`} type={cellType} />
-          ))
-      )}
-    </div>
   );
 }
 

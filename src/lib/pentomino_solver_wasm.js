@@ -132,10 +132,11 @@ export class WasmSolver {
     /**
     * @param {number} rows
     * @param {number} cols
+    * @param {boolean} large_table
     * @returns {WasmSolver}
     */
-    static new(rows, cols) {
-        const ret = wasm.wasmsolver_new(rows, cols);
+    static new(rows, cols, large_table) {
+        const ret = wasm.wasmsolver_new(rows, cols, large_table);
         return WasmSolver.__wrap(ret);
     }
     /**

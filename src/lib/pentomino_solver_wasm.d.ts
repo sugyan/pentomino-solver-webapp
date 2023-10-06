@@ -12,9 +12,10 @@ export class WasmSolver {
 /**
 * @param {number} rows
 * @param {number} cols
+* @param {boolean} large_table
 * @returns {WasmSolver}
 */
-  static new(rows: number, cols: number): WasmSolver;
+  static new(rows: number, cols: number, large_table: boolean): WasmSolver;
 /**
 * @param {bigint} initial
 * @param {boolean} unique
@@ -34,7 +35,7 @@ export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_solutions_free: (a: number) => void;
   readonly __wbg_wasmsolver_free: (a: number) => void;
-  readonly wasmsolver_new: (a: number, b: number) => number;
+  readonly wasmsolver_new: (a: number, b: number, c: number) => number;
   readonly wasmsolver_solve: (a: number, b: number, c: number) => number;
   readonly wasmsolver_represent_solution: (a: number, b: number, c: number) => void;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
