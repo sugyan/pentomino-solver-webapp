@@ -1,26 +1,18 @@
-import { useEffect } from "react";
-import { SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useFormContext } from "react-hook-form";
 import { BoardType } from "./types.ts";
 
-type Inputs = {
+export interface Changes {
+  board_type: BoardType;
+  unique: boolean;
+}
+
+export type Inputs = {
   board_type: BoardType;
   unique: boolean;
 };
 
-interface Props {
-  defaultValues: Inputs;
-  onSubmit: SubmitHandler<Inputs>;
-  onChangeValues: ({ board_type }: { board_type: BoardType }) => void;
-}
-
-function Form({ defaultValues, onSubmit, onChangeValues }: Props) {
-  const { handleSubmit, register, watch } = useForm<Inputs>({
-    defaultValues,
-  });
-  const boardType = watch("board_type");
-  useEffect(() => {
-    onChangeValues({ board_type: boardType });
-  }, [boardType, onChangeValues]);
+function Form({ onSubmit }: { onSubmit: SubmitHandler<Inputs> }) {
+  const { handleSubmit, register } = useFormContext<Inputs>();
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div>

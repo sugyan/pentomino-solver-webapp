@@ -1,8 +1,30 @@
+import { BoardType } from "./types.ts";
+
 export const MessageType = {
+  // from main to worker
+  SOLVER: "solver",
+  START: "start",
+  // from worker to main
+  INITIALIZED: "initialized",
   TEXT: "text",
   RESULTS: "results",
 } as const;
 export type MessageType = (typeof MessageType)[keyof typeof MessageType];
+
+export interface SolverMessage {
+  type: typeof MessageType.SOLVER;
+  board_type: BoardType;
+}
+
+export interface StartMessages {
+  type: typeof MessageType.START;
+  initial: bigint;
+  unique: boolean;
+}
+
+export interface InitializedMessage {
+  type: typeof MessageType.INITIALIZED;
+}
 
 export interface TextMessage {
   type: typeof MessageType.TEXT;
@@ -14,4 +36,5 @@ export interface ResultsMessage {
   results: string[][];
 }
 
-export type Message = TextMessage | ResultsMessage;
+export type MainMessage = SolverMessage | StartMessages;
+export type WorkerMessage = InitializedMessage | TextMessage | ResultsMessage;

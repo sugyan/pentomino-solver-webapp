@@ -88,9 +88,10 @@ function CanvasBoard({
     });
   }, [canvasRef, solution]);
   const onClick = useCallback(() => {
+    const newWindow = window.open("", "_blank");
     canvasRef.current?.toBlob((blob) => {
-      if (blob) {
-        window.open(URL.createObjectURL(blob), "_blank");
+      if (blob && newWindow) {
+        newWindow.location.href = URL.createObjectURL(blob);
       }
     }, "image/png");
   }, [canvasRef]);

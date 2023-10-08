@@ -1,17 +1,22 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { FormProvider, useForm } from "react-hook-form";
 import "./App.css";
 import { useAnimationFrame } from "./AnimationFrame.tsx";
 import CanvasBoard from "./CanvasBoard.tsx";
-import Form from "./Form.tsx";
-import { Message, MessageType } from "./message.ts";
+import Form, { Inputs } from "./Form.tsx";
+import { WorkerMessage, MessageType } from "./message.ts";
 import { BoardType } from "./types.ts";
 
 function App() {
   const [message, setMessage] = useState<string>("");
-  const [boardType, setBoardType] = useState<BoardType>(BoardType.rect6x10);
   const [solutions, setSolutions] = useState<string[][]>([]);
   const [index, setIndex] = useState<number>(-1);
   const [running, setRunning] = useState<boolean>(true);
+  const [initialized, setInitialized] = useState<boolean>(false);
+  const formMethods = useForm<Inputs>({
+    defaultValues: { board_type: BoardType.rect6x10, unique: true },
+  });
+  const values = formMethods.watch();
   const worker = useMemo(() => {
     return new Worker(new URL("./worker", import.meta.url), {
       type: "module",
@@ -30,18 +35,38 @@ function App() {
     50,
     running
   );
-  const start = () => {
-    setMessage("solving...");
+  const reset = () => {
+    setRunning(false);
+    setMessage("");
     setIndex(-1);
     setSolutions([]);
-    worker.postMessage(null);
   };
-  const onChange = ({ board_type }: { board_type: BoardType }) => {
-    setBoardType(board_type);
+  const start = () => {
+    reset();
+    worker.postMessage({
+      type: MessageType.START,
+      initial:
+        values.board_type === BoardType.rect8x8_2x2
+          ? BigInt(0x0000_0018_1800_0000)
+          : BigInt(0),
+      unique: values.unique,
+    });
   };
+  useEffect(() => {
+    reset();
+    if (initialized) {
+      worker.postMessage({
+        type: MessageType.SOLVER,
+        board_type: values.board_type,
+      });
+    }
+  }, [worker, initialized, values.board_type]);
   worker.onmessage = (event: MessageEvent) => {
-    const message: Message = event.data;
+    const message: WorkerMessage = event.data;
     switch (message.type) {
+      case MessageType.INITIALIZED:
+        setInitialized(true);
+        break;
       case MessageType.TEXT:
         setMessage(message.text);
         break;
@@ -57,15 +82,13 @@ function App() {
     <>
       <h3>Pentomino Solver</h3>
       <div className="card">
-        <Form
-          defaultValues={{ board_type: boardType, unique: true }}
-          onSubmit={start}
-          onChangeValues={onChange}
-        />
-        <pre>{message}</pre>
+        <FormProvider {...formMethods}>
+          <Form onSubmit={start} />
+        </FormProvider>
+        <pre id="message">{message}</pre>
       </div>
       <CanvasBoard
-        boardType={boardType}
+        boardType={values.board_type}
         solution={index >= 0 ? solutions[index] : null}
       />
       {index >= 0 && (

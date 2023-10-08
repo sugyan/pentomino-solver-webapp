@@ -41,6 +41,10 @@
   color: #888;
 }
 
+#message {
+  line-height: 1.2em;
+}
+
 .canvas-container {
   display: flex;
   justify-content: center;
