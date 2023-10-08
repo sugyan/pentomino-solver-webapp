@@ -1,11 +1,14 @@
 import { useMemo, useState } from "react";
 import "./App.css";
 import { useAnimationFrame } from "./AnimationFrame.tsx";
-import Board from "./Board.tsx";
+import CanvasBoard from "./CanvasBoard.tsx";
+import Form from "./Form.tsx";
 import { Message, MessageType } from "./message.ts";
+import { BoardType } from "./types.ts";
 
 function App() {
   const [message, setMessage] = useState<string>("");
+  const [boardType, setBoardType] = useState<BoardType>(BoardType.rect6x10);
   const [solutions, setSolutions] = useState<string[][]>([]);
   const [index, setIndex] = useState<number>(-1);
   const [running, setRunning] = useState<boolean>(true);
@@ -24,7 +27,7 @@ function App() {
         }
       });
     },
-    75,
+    50,
     running
   );
   const start = () => {
@@ -32,6 +35,9 @@ function App() {
     setIndex(-1);
     setSolutions([]);
     worker.postMessage(null);
+  };
+  const onChange = ({ board_type }: { board_type: BoardType }) => {
+    setBoardType(board_type);
   };
   worker.onmessage = (event: MessageEvent) => {
     const message: Message = event.data;
@@ -51,14 +57,29 @@ function App() {
     <>
       <h3>Pentomino Solver</h3>
       <div className="card">
-        <button onClick={start}>solve</button>
+        <Form
+          defaultValues={{ board_type: boardType, unique: true }}
+          onSubmit={start}
+          onChangeValues={onChange}
+        />
         <pre>{message}</pre>
       </div>
+      <CanvasBoard
+        boardType={boardType}
+        solution={index >= 0 ? solutions[index] : null}
+      />
       {index >= 0 && (
-        <div onClick={() => setRunning(!running)}>
-          <Board solution={solutions[index]} />
-          <pre>solution #{index.toString().padStart(4, "0")}</pre>
-        </div>
+        <>
+          <pre>
+            solution #
+            {index
+              .toString()
+              .padStart(Math.ceil(Math.log10(solutions.length)), "0")}
+          </pre>
+          <button onClick={() => setRunning(!running)}>
+            {running ? "OK" : "Shuffle!"}
+          </button>
+        </>
       )}
     </>
   );
