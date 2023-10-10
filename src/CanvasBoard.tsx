@@ -29,7 +29,7 @@ function CanvasBoard({
       const size = BoardSize[boardType];
       const unit =
         (window.innerWidth * 0.9) /
-        (boardType === BoardType.rect3x20 ? 20 : 15);
+        (boardType === BoardType.Rect3x20 ? 20 : 15);
       canvasRef.current.style.height = `${unit * size.height}px`;
       canvasRef.current.style.width = `${unit * size.width}px`;
       canvasRef.current.height = 50 * size.height;
@@ -45,10 +45,13 @@ function CanvasBoard({
   }, [resizeCanvas, boardType]);
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx || !solution) {
+    if (!ctx) {
       return;
     }
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    if (!solution) {
+      return;
+    }
     solution.forEach((row, rowIndex) => {
       row.split("").forEach((col, colIndex) => {
         ctx.fillStyle = Colors[col] || "black";
@@ -100,8 +103,8 @@ function CanvasBoard({
       <canvas
         ref={canvasRef}
         style={{ cursor: solution ? "pointer" : "default" }}
-        onClick={onClick}
-      ></canvas>
+        onClick={solution ? onClick : () => {}}
+      />
     </div>
   );
 }

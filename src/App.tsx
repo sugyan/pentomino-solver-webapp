@@ -5,7 +5,7 @@ import { useAnimationFrame } from "./AnimationFrame.tsx";
 import CanvasBoard from "./CanvasBoard.tsx";
 import Form, { Inputs } from "./Form.tsx";
 import { WorkerMessage, MessageType } from "./message.ts";
-import { BoardType } from "./types.ts";
+import { BoardType, SolverType } from "./types.ts";
 
 function App() {
   const [message, setMessage] = useState<string>("");
@@ -13,8 +13,13 @@ function App() {
   const [index, setIndex] = useState<number>(-1);
   const [running, setRunning] = useState<boolean>(true);
   const [initialized, setInitialized] = useState<boolean>(false);
+  const [isReady, setIsReady] = useState<boolean>(false);
   const formMethods = useForm<Inputs>({
-    defaultValues: { board_type: BoardType.rect6x10, unique: true },
+    defaultValues: {
+      solver_type: SolverType.Light,
+      board_type: BoardType.Rect6x10,
+      unique: true,
+    },
   });
   const values = formMethods.watch();
   const worker = useMemo(() => {
@@ -32,12 +37,11 @@ function App() {
         }
       });
     },
-    50,
+    0,
     running
   );
   const reset = () => {
     setRunning(false);
-    setMessage("");
     setIndex(-1);
     setSolutions([]);
   };
@@ -46,7 +50,7 @@ function App() {
     worker.postMessage({
       type: MessageType.START,
       initial:
-        values.board_type === BoardType.rect8x8_2x2
+        values.board_type === BoardType.Rect8x8_2x2
           ? BigInt(0x0000_0018_1800_0000)
           : BigInt(0),
       unique: values.unique,
@@ -57,33 +61,39 @@ function App() {
     if (initialized) {
       worker.postMessage({
         type: MessageType.SOLVER,
+        solver_type: values.solver_type,
         board_type: values.board_type,
       });
     }
-  }, [worker, initialized, values.board_type]);
+  }, [worker, initialized, values.solver_type, values.board_type]);
   worker.onmessage = (event: MessageEvent) => {
-    const message: WorkerMessage = event.data;
-    switch (message.type) {
-      case MessageType.INITIALIZED:
-        setInitialized(true);
-        break;
-      case MessageType.TEXT:
-        setMessage(message.text);
-        break;
-      case MessageType.RESULTS:
-        setSolutions(message.results);
-        setRunning(true);
-        break;
-      default:
-        break;
-    }
+    const messages: WorkerMessage = event.data;
+    messages.forEach((message) => {
+      switch (message.type) {
+        case MessageType.INITIALIZED:
+          setInitialized(true);
+          break;
+        case MessageType.STATE:
+          setIsReady(message.is_ready);
+          break;
+        case MessageType.TEXT:
+          setMessage(message.text);
+          break;
+        case MessageType.RESULTS:
+          setSolutions(message.results);
+          setRunning(true);
+          break;
+        default:
+          break;
+      }
+    });
   };
   return (
     <>
       <h3>Pentomino Solver</h3>
       <div className="card">
         <FormProvider {...formMethods}>
-          <Form onSubmit={start} />
+          <Form onSubmit={start} isReady={isReady} />
         </FormProvider>
         <pre id="message">{message}</pre>
       </div>

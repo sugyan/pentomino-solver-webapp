@@ -1,6 +1,6 @@
 import init, { WasmSolver } from "./lib/pentomino_solver_wasm";
 import { MainMessage, MessageType } from "./message.ts";
-import { BoardSize, BoardType } from "./types.ts";
+import { BoardSize, BoardType, SolverType } from "./types.ts";
 
 class Worker {
   solver: WasmSolver | null = null;
@@ -9,7 +9,7 @@ class Worker {
   handleMessage(message: MainMessage) {
     switch (message.type) {
       case MessageType.SOLVER:
-        this.prepareSolver(message.board_type);
+        this.prepareSolver(message.solver_type, message.board_type);
         break;
       case MessageType.START:
         this.start(message.initial, message.unique);
@@ -18,13 +18,38 @@ class Worker {
         break;
     }
   }
-  private prepareSolver(boardType: BoardType) {
-    // TODO: handle multiple solver requests
-    const size = BoardSize[boardType];
+  private prepareSolver(solverType: SolverType, boardType: BoardType) {
+    self.postMessage([
+      {
+        type: MessageType.STATE,
+        is_ready: false,
+      },
+      {
+        type: MessageType.TEXT,
+        text: `Preparing ${solverType} solver for ${boardType}...`,
+      },
+    ]);
     if (this.solver) {
       this.solver.free();
     }
-    this.solver = WasmSolver.new(size.height, size.width, false);
+    const size = BoardSize[boardType];
+    const now = performance.now();
+    this.solver = WasmSolver.new(
+      size.height,
+      size.width,
+      solverType === SolverType.PerfPlus
+    );
+    const elapsed = performance.now() - now;
+    self.postMessage([
+      {
+        type: MessageType.STATE,
+        is_ready: true,
+      },
+      {
+        type: MessageType.TEXT,
+        text: `Initialized solver (${elapsed.toFixed(3)}ms)`,
+      },
+    ]);
   }
   private start(initial: bigint, unique: boolean) {
     if (!this.solver) {
@@ -34,14 +59,16 @@ class Worker {
     const solutions = this.solver.solve(initial, unique);
     const elapsed = performance.now() - now;
     const results = this.solver.represent_solution(solutions);
-    self.postMessage({
-      type: MessageType.TEXT,
-      text: `Found ${results.length} solutions in ${elapsed.toFixed(3)} ms`,
-    });
-    self.postMessage({
-      type: MessageType.RESULTS,
-      results,
-    });
+    self.postMessage([
+      {
+        type: MessageType.TEXT,
+        text: `Found ${results.length} solutions (${elapsed.toFixed(3)} ms)`,
+      },
+      {
+        type: MessageType.RESULTS,
+        results,
+      },
+    ]);
   }
 }
 
@@ -51,5 +78,5 @@ const worker = new Worker();
   self.addEventListener("message", (event: MessageEvent) => {
     worker.handleMessage(event.data);
   });
-  self.postMessage({ type: MessageType.INITIALIZED });
+  self.postMessage([{ type: MessageType.INITIALIZED }]);
 })();
