@@ -112,7 +112,7 @@ function App() {
           <div className="flex items-center text-sm font-mono">
             <button
               onClick={() => updateIndex(index - 1)}
-              className="text-gray-200 px-2 py-1"
+              className="text-gray-200 px-2 py-1 select-none"
             >
               &lt;
             </button>
@@ -129,7 +129,7 @@ function App() {
             </div>
             <button
               onClick={() => updateIndex(index + 1)}
-              className="text-gray-200 px-2 py-1"
+              className="text-gray-200 px-2 py-1 select-none"
             >
               &gt;
             </button>
