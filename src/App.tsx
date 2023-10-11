@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import "./App.css";
 import { useAnimationFrame } from "./AnimationFrame.tsx";
 import CanvasBoard from "./CanvasBoard.tsx";
 import Form, { Inputs } from "./Form.tsx";
@@ -11,7 +10,7 @@ function App() {
   const [message, setMessage] = useState<string>("");
   const [solutions, setSolutions] = useState<string[][]>([]);
   const [index, setIndex] = useState<number>(-1);
-  const [running, setRunning] = useState<boolean>(true);
+  const [animating, setAnimating] = useState<boolean>(true);
   const [initialized, setInitialized] = useState<boolean>(false);
   const [isReady, setIsReady] = useState<boolean>(false);
   const formMethods = useForm<Inputs>({
@@ -27,21 +26,8 @@ function App() {
       type: "module",
     });
   }, []);
-  useAnimationFrame(
-    () => {
-      setIndex(() => {
-        if (solutions.length === 0) {
-          return -1;
-        } else {
-          return Math.floor(Math.random() * solutions.length);
-        }
-      });
-    },
-    0,
-    running
-  );
   const reset = () => {
-    setRunning(false);
+    setAnimating(false);
     setIndex(-1);
     setSolutions([]);
   };
@@ -56,6 +42,25 @@ function App() {
       unique: values.unique,
     });
   };
+  const updateIndex = (value: number) => {
+    if (solutions.length === 0) {
+      return -1;
+    }
+    setIndex((value + solutions.length) % solutions.length);
+  };
+  useAnimationFrame(
+    () => {
+      setIndex(() => {
+        if (solutions.length === 0) {
+          return -1;
+        } else {
+          return Math.floor(Math.random() * solutions.length);
+        }
+      });
+    },
+    0,
+    animating
+  );
   useEffect(() => {
     reset();
     if (initialized) {
@@ -81,7 +86,10 @@ function App() {
           break;
         case MessageType.RESULTS:
           setSolutions(message.results);
-          setRunning(true);
+          setAnimating(true);
+          setTimeout(() => {
+            setAnimating(false);
+          }, 300);
           break;
         default:
           break;
@@ -89,32 +97,46 @@ function App() {
     });
   };
   return (
-    <>
-      <h3>Pentomino Solver</h3>
-      <div className="card">
+    <div className="bg-gray-800 text-gray-200 min-h-screen">
+      <div className="max-w-screen-lg mx-auto py-4 flex flex-col items-center">
+        <h1 className="font-mono text-2xl mb-2">Pentomino Solver</h1>
         <FormProvider {...formMethods}>
           <Form onSubmit={start} isReady={isReady} />
         </FormProvider>
-        <pre id="message">{message}</pre>
+        <pre className="mx-2 my-4 text-sm text-gray-300">{message}</pre>
+        <CanvasBoard
+          boardType={values.board_type}
+          solution={index >= 0 ? solutions[index] : null}
+        />
+        {index >= 0 && (
+          <div className="flex items-center text-sm font-mono">
+            <button
+              onClick={() => updateIndex(index - 1)}
+              className="text-gray-200 px-2 py-1"
+            >
+              &lt;
+            </button>
+            <div>
+              solution #
+              <input
+                type="number"
+                value={index
+                  .toString()
+                  .padStart(Math.ceil(Math.log10(solutions.length)), "0")}
+                onChange={(event) => updateIndex(parseInt(event.target.value))}
+                className="bg-gray-800 text-gray-200 w-12"
+              />
+            </div>
+            <button
+              onClick={() => updateIndex(index + 1)}
+              className="text-gray-200 px-2 py-1"
+            >
+              &gt;
+            </button>
+          </div>
+        )}
       </div>
-      <CanvasBoard
-        boardType={values.board_type}
-        solution={index >= 0 ? solutions[index] : null}
-      />
-      {index >= 0 && (
-        <>
-          <pre>
-            solution #
-            {index
-              .toString()
-              .padStart(Math.ceil(Math.log10(solutions.length)), "0")}
-          </pre>
-          <button onClick={() => setRunning(!running)}>
-            {running ? "OK" : "Shuffle!"}
-          </button>
-        </>
-      )}
-    </>
+    </div>
   );
 }
 

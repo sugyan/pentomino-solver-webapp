@@ -99,11 +99,12 @@ function CanvasBoard({
     }, "image/png");
   }, [canvasRef]);
   return (
-    <div className="canvas-container">
+    <div className="flex justify-center mb-4">
       <canvas
         ref={canvasRef}
         style={{ cursor: solution ? "pointer" : "default" }}
         onClick={solution ? onClick : () => {}}
+        className="border-gray-200 border-double border-2"
       />
     </div>
   );

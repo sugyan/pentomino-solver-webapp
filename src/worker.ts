@@ -19,6 +19,7 @@ class Worker {
     }
   }
   private prepareSolver(solverType: SolverType, boardType: BoardType) {
+    const boardName = boardType.split(" ")[0];
     self.postMessage([
       {
         type: MessageType.STATE,
@@ -26,7 +27,7 @@ class Worker {
       },
       {
         type: MessageType.TEXT,
-        text: `Preparing ${solverType} solver for ${boardType}...`,
+        text: `Preparing ${solverType} solver for ${boardName}...`,
       },
     ]);
     if (this.solver) {
@@ -62,7 +63,7 @@ class Worker {
     self.postMessage([
       {
         type: MessageType.TEXT,
-        text: `Found ${results.length} solutions (${elapsed.toFixed(3)} ms)`,
+        text: `Found ${results.length} solutions (${elapsed.toFixed(3)}ms)`,
       },
       {
         type: MessageType.RESULTS,
